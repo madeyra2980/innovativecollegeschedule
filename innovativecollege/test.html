@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест API расписания</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Тест API системы расписания</h1>
+        
+        <div class="section">
+            <h3>1. Получить все группы</h3>
+            <button onclick="getGroups()">Получить группы</button>
+            <div id="groupsResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>2. Получить всех студентов</h3>
+            <button onclick="getStudents()">Получить студентов</button>
+            <div id="studentsResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>3. Получить всех преподавателей</h3>
+            <button onclick="getTeachers()">Получить преподавателей</button>
+            <div id="teachersResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>4. Расписание студента по ИИН</h3>
+            <input type="text" id="studentIIN" placeholder="Введите ИИН студента" value="111111111111">
+            <button onclick="getStudentSchedule()">Получить расписание</button>
+            <div id="studentScheduleResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>5. Расписание преподавателя по ИИН</h3>
+            <input type="text" id="teacherIIN" placeholder="Введите ИИН преподавателя" value="123456789012">
+            <button onclick="getTeacherSchedule()">Получить расписание</button>
+            <div id="teacherScheduleResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>6. Расписание по дню недели</h3>
+            <input type="number" id="dayOfWeek" placeholder="День недели (1-7)" value="1" min="1" max="7">
+            <button onclick="getSchedulesByDay()">Получить расписание</button>
+            <div id="schedulesByDayResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/v1';
+
+        async function makeRequest(url) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                return { success: true, data };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        function displayResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            if (result.success) {
+                element.textContent = JSON.stringify(result.data, null, 2);
+            } else {
+                element.textContent = 'Ошибка: ' + result.error;
+            }
+        }
+
+        async function getGroups() {
+            const result = await makeRequest(`${API_BASE}/groups`);
+            displayResult('groupsResult', result);
+        }
+
+        async function getStudents() {
+            const result = await makeRequest(`${API_BASE}/students`);
+            displayResult('studentsResult', result);
+        }
+
+        async function getTeachers() {
+            const result = await makeRequest(`${API_BASE}/teachers`);
+            displayResult('teachersResult', result);
+        }
+
+        async function getStudentSchedule() {
+            const iin = document.getElementById('studentIIN').value;
+            const result = await makeRequest(`${API_BASE}/students/${iin}/schedule`);
+            displayResult('studentScheduleResult', result);
+        }
+
+        async function getTeacherSchedule() {
+            const iin = document.getElementById('teacherIIN').value;
+            const result = await makeRequest(`${API_BASE}/teachers/${iin}/schedule`);
+            displayResult('teacherScheduleResult', result);
+        }
+
+        async function getSchedulesByDay() {
+            const day = document.getElementById('dayOfWeek').value;
+            const result = await makeRequest(`${API_BASE}/schedules/day/${day}`);
+            displayResult('schedulesByDayResult', result);
+        }
+    </script>
+</body>
+</html>
