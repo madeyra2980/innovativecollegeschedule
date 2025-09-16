@@ -1243,6 +1243,7 @@ func (h *Handlers) GetLessons(c *gin.Context) {
 				filter["date"] = bson.M{
 					"$gte": startOfDay,
 					"$lte": endOfDay,
+					"$ne":  nil, // Исключаем уроки без даты
 				}
 			}
 		}
@@ -1255,6 +1256,7 @@ func (h *Handlers) GetLessons(c *gin.Context) {
 			filter["date"] = bson.M{
 				"$gte": startOfDay,
 				"$lt":  endOfDay,
+				"$ne":  nil, // Исключаем уроки без даты
 			}
 		}
 	}
@@ -1285,6 +1287,7 @@ func (h *Handlers) GetLessons(c *gin.Context) {
 	defer cursor.Close(context.Background())
 
 	var lessons []models.Lesson
+
 	if err = cursor.All(context.Background(), &lessons); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки уроков"})
 		return

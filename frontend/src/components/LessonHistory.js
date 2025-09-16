@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { lessonsApi, groupsApi, teachersApi, subjectsApi } from '../services/api';
+import { lessonsApi, groupsApi, teachersApi, subjectsApi, statisticsApi } from '../services/api';
 import CardSelector from './CardSelector';
 
 const LessonHistory = () => {
@@ -17,6 +17,9 @@ const LessonHistory = () => {
     shift: ''
   });
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [statistics, setStatistics] = useState(null);
+  const [showStatistics, setShowStatistics] = useState(false);
+  const [statisticsLoading, setStatisticsLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -24,6 +27,7 @@ const LessonHistory = () => {
 
   useEffect(() => {
     fetchLessons();
+    fetchStatistics();
   }, [filters]);
 
   const fetchData = async () => {
@@ -68,6 +72,32 @@ const LessonHistory = () => {
     }
   };
 
+  const fetchStatistics = async () => {
+    try {
+      setStatisticsLoading(true);
+      const params = {};
+      
+      if (filters.startDate && filters.endDate) {
+        params.start_date = filters.startDate;
+        params.end_date = filters.endDate;
+      } else if (filters.startDate) {
+        params.start_date = filters.startDate;
+        params.end_date = filters.startDate;
+      }
+      
+      if (filters.groupId) params.group_id = filters.groupId;
+      if (filters.teacherId) params.teacher_id = filters.teacherId;
+
+      const response = await statisticsApi.getLessonStatistics(params);
+      setStatistics(response.data);
+    } catch (err) {
+      console.error('Ошибка загрузки статистики:', err);
+      setStatistics(null);
+    } finally {
+      setStatisticsLoading(false);
+    }
+  };
+
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({
       ...prev,
@@ -86,13 +116,24 @@ const LessonHistory = () => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    if (!dateString) return 'Дата не указана';
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Неверная дата';
+      }
+      
+      return date.toLocaleDateString('ru-RU', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Ошибка форматирования даты:', error, dateString);
+      return 'Ошибка даты';
+    }
   };
 
   const getGroupName = (groupId) => {
@@ -127,8 +168,19 @@ const LessonHistory = () => {
     <div className="lesson-history">
       <div className="card">
         <div className="card-header">
-          <h2>История уроков</h2>
-          <p>Просмотр проведенных уроков по датам и фильтрам</p>
+          <div className="header-content">
+            <div>
+              <h2>История уроков</h2>
+              <p>Просмотр проведенных уроков по датам и фильтрам</p>
+            </div>
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowStatistics(!showStatistics)}
+              disabled={statisticsLoading}
+            >
+              {statisticsLoading ? '⏳ Загрузка...' : showStatistics ? '📊 Скрыть статистику' : '📊 Показать статистику'}
+            </button>
+          </div>
         </div>
 
         {/* Фильтры */}
@@ -219,6 +271,68 @@ const LessonHistory = () => {
           </div>
         )}
 
+        {/* Статистика */}
+        {showStatistics && (
+          <div className="statistics-section">
+            <h3>Статистика</h3>
+            {statisticsLoading ? (
+              <div className="loading">Загрузка статистики...</div>
+            ) : statistics ? (
+              <div className="statistics-grid">
+              <div className="stat-card">
+                <h4>Общее количество уроков</h4>
+                <div className="stat-number">{statistics.total_lessons}</div>
+              </div>
+              
+              <div className="stat-card">
+                <h4>По сменам</h4>
+                <div className="stat-details">
+                  <div>Первая смена: <strong>{statistics.by_shift?.first_shift || 0}</strong></div>
+                  <div>Вторая смена: <strong>{statistics.by_shift?.second_shift || 0}</strong></div>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <h4>По дням недели</h4>
+                <div className="stat-details">
+                  {Object.entries(statistics.by_day_of_week || {}).map(([day, count]) => (
+                    <div key={day}>
+                      {day}: <strong>{count}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <h4>Топ преподавателей</h4>
+                <div className="stat-details">
+                  {statistics.top_teachers?.slice(0, 5).map((teacher, index) => (
+                    <div key={index}>
+                      {index + 1}. {teacher.name}: <strong>{teacher.count}</strong> уроков
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <h4>Топ групп</h4>
+                <div className="stat-details">
+                  {statistics.top_groups?.slice(0, 5).map((group, index) => (
+                    <div key={index}>
+                      {index + 1}. {group.name}: <strong>{group.count}</strong> уроков
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            ) : (
+              <div className="empty-state">
+                <p>Статистика недоступна</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Результаты */}
         <div className="results-section">
           <div className="results-header">
@@ -238,7 +352,7 @@ const LessonHistory = () => {
                     <div className="lesson-date">
                       <strong>{formatDate(lesson.date)}</strong>
                       <span className="lesson-time">
-                        {lesson.start_time} - {lesson.end_time}
+                        {lesson.start_time || 'Время не указано'} - {lesson.end_time || 'Время не указано'}
                       </span>
                     </div>
                     <div className="lesson-shift">

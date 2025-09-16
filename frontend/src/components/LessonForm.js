@@ -12,6 +12,25 @@ const LessonForm = ({ onSubmit, onCancel, groups, teachers, subjects, initialDat
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Валидация формы
+    if (!formData.group_id) {
+      alert('Пожалуйста, выберите группу');
+      return;
+    }
+    if (!formData.teacher_id) {
+      alert('Пожалуйста, выберите преподавателя');
+      return;
+    }
+    if (!formData.subject_id) {
+      alert('Пожалуйста, выберите предмет');
+      return;
+    }
+    if (!formData.room.trim()) {
+      alert('Пожалуйста, введите номер аудитории');
+      return;
+    }
+    
     onSubmit(formData);
   };
 

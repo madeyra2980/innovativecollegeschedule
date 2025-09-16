@@ -1,13 +1,30 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
-
+const API_BASE_URL = 'http://localhost:9090/api/v1';
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 секунд таймаут
 });
+
+// Интерцептор для обработки ошибок
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNABORTED') {
+      error.message = 'Превышено время ожидания запроса';
+    } else if (error.code === 'ERR_NETWORK') {
+      error.message = 'Ошибка сети. Проверьте подключение к серверу';
+    } else if (error.response?.status === 500) {
+      error.message = 'Внутренняя ошибка сервера';
+    } else if (error.response?.status === 404) {
+      error.message = 'Ресурс не найден';
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Группы
 export const groupsApi = {
@@ -75,6 +92,11 @@ export const timeSlotsApi = {
   delete: (id) => api.delete(`/time-slots/${id}`),
   getByShift: (shift) => api.get('/time-slots', { params: { shift } }),
   getActive: () => api.get('/time-slots', { params: { is_active: true } }),
+};
+
+// Статистика
+export const statisticsApi = {
+  getLessonStatistics: (params = {}) => api.get('/statistics/lessons', { params }),
 };
 
 export default api;

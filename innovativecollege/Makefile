@@ -12,6 +12,10 @@ build:
 init-data:
 	go run scripts/init_data.go
 
+# Очистка тестовых данных
+clear-data:
+	go run scripts/clear_data.go
+
 # Очистка собранных файлов
 clean:
 	rm -rf bin/
@@ -27,11 +31,12 @@ start: run init-data
 # Помощь
 help:
 	@echo "Доступные команды:"
-	@echo "  run        - Запустить приложение"
-	@echo "  build      - Собрать приложение"
-	@echo "  init-data  - Инициализировать тестовые данные"
-	@echo "  clean      - Очистить собранные файлы"
-	@echo "  deps       - Установить зависимости"
-	@echo "  start      - Запустить с инициализацией данных"
-	@echo "  help       - Показать эту справку"
+	@echo "  run         - Запустить приложение"
+	@echo "  build       - Собрать приложение"
+	@echo "  init-data   - Инициализировать тестовые данные"
+	@echo "  clear-data  - Очистить тестовые данные"
+	@echo "  clean       - Очистить собранные файлы"
+	@echo "  deps        - Установить зависимости"
+	@echo "  start       - Запустить с инициализацией данных"
+	@echo "  help        - Показать эту справку"
 

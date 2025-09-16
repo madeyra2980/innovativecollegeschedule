@@ -17,6 +17,8 @@ const TrelloSchedule = () => {
   const [selectedShift, setSelectedShift] = useState(1);
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [removingLessons, setRemovingLessons] = useState(new Set());
+  const [isCreatingLesson, setIsCreatingLesson] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   const daysOfWeek = [
     { value: 1, label: 'Понедельник' },
@@ -30,6 +32,14 @@ const TrelloSchedule = () => {
     { value: 1, label: 'Первая смена' },
     { value: 2, label: 'Вторая смена' }
   ];
+
+  // Функция для показа уведомлений
+  const showNotification = (message, type = 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 4000); // Автоматически скрываем через 4 секунды
+  };
 
   useEffect(() => {
     fetchData();
@@ -114,7 +124,7 @@ const TrelloSchedule = () => {
 
     // Проверяем, не добавлен ли уже такой урок в этот слот
     if (isLessonAlreadyInSlot(timeSlotId, selectedLesson)) {
-      setError('Этот урок уже добавлен в данный слот! Один урок не может быть назначен дважды в одно время.');
+      showNotification('Этот урок уже добавлен в данный слот! Один урок не может быть назначен дважды в одно время.', 'warning');
       return;
     }
 
@@ -122,25 +132,17 @@ const TrelloSchedule = () => {
       const startTime = slot.start_time;
       const endTime = slot.end_time;
       
-      // Используем фиксированную дату для понедельника (2025-09-15)
-      let targetDate;
-      if (selectedDay === 1) {
-        targetDate = new Date('2025-09-15'); // Понедельник
-      } else if (selectedDay === 2) {
-        targetDate = new Date('2025-09-16'); // Вторник
-      } else if (selectedDay === 3) {
-        targetDate = new Date('2025-09-17'); // Среда
-      } else if (selectedDay === 4) {
-        targetDate = new Date('2025-09-18'); // Четверг
-      } else if (selectedDay === 5) {
-        targetDate = new Date('2025-09-19'); // Пятница
-      } else {
-        // Fallback к вычислению относительно сегодня
-        const today = new Date();
-        const daysUntilTarget = (selectedDay - today.getDay() + 7) % 7;
-        targetDate = new Date(today);
-        targetDate.setDate(today.getDate() + daysUntilTarget);
-      }
+      // Вычисляем дату для выбранного дня недели относительно текущей недели
+      const today = new Date();
+      const currentDayOfWeek = today.getDay() === 0 ? 7 : today.getDay(); // Воскресенье = 7
+      
+      // Вычисляем понедельник текущей недели
+      const mondayOfCurrentWeek = new Date(today);
+      mondayOfCurrentWeek.setDate(today.getDate() - currentDayOfWeek + 1);
+      
+      // Вычисляем дату для выбранного дня недели
+      const targetDate = new Date(mondayOfCurrentWeek);
+      targetDate.setDate(mondayOfCurrentWeek.getDate() + selectedDay - 1);
       
       // Создаем НОВЫЙ урок на основе выбранного (копию)
       const newScheduledLesson = {
@@ -168,6 +170,7 @@ const TrelloSchedule = () => {
 
       setSelectedLesson(null);
       setError(''); // Очищаем ошибки при успешном добавлении
+      showNotification('Урок успешно добавлен в расписание!', 'success');
     } catch (err) {
       setError('Ошибка обновления урока: ' + (err.response?.data?.error || err.message));
     }
@@ -190,6 +193,7 @@ const TrelloSchedule = () => {
         
         // Перезагружаем данные с сервера для подтверждения
         await fetchLessons();
+        showNotification('Урок удален из расписания!', 'success');
       }
     } catch (err) {
       setError('Ошибка удаления урока: ' + (err.response?.data?.error || err.message));
@@ -204,12 +208,16 @@ const TrelloSchedule = () => {
 
   const handleCreateLesson = async (lessonData) => {
     try {
+      setIsCreatingLesson(true);
+      setError(null);
+      
       // Создаем урок только с основными данными, без даты и времени
       const newLesson = {
         group_id: lessonData.group_id,
         teacher_id: lessonData.teacher_id,
         subject_id: lessonData.subject_id,
         room: lessonData.room,
+        description: lessonData.description,
         // Дата и время будут установлены при перетаскивании
         date: null,
         start_time: null,
@@ -226,8 +234,11 @@ const TrelloSchedule = () => {
       await fetchLessons();
       
       setShowLessonForm(false);
+      showNotification('Урок успешно создан!', 'success');
     } catch (err) {
       setError('Ошибка создания урока: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setIsCreatingLesson(false);
     }
   };
 
@@ -372,6 +383,24 @@ const TrelloSchedule = () => {
         }
       }}
     >
+      {/* Уведомления */}
+      {notification && (
+        <div className={`notification notification-${notification.type}`}>
+          <div className="notification-content">
+            <span className="notification-icon">
+              {notification.type === 'warning' ? '⚠️' : notification.type === 'success' ? '✅' : '❌'}
+            </span>
+            <span className="notification-message">{notification.message}</span>
+            <button 
+              className="notification-close"
+              onClick={() => setNotification(null)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Затемненный фон при выборе слота */}
       {selectedLesson && (
         <div className="background-overlay" onClick={handleCancelSelection}></div>
@@ -400,8 +429,9 @@ const TrelloSchedule = () => {
           <button 
             className="btn btn-primary"
             onClick={() => setShowLessonForm(true)}
+            disabled={isCreatingLesson}
           >
-            + Добавить урок
+            {isCreatingLesson ? '⏳ Создание...' : '+ Добавить урок'}
           </button>
 
           <div className="control-group">

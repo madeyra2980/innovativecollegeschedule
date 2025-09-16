@@ -44,6 +44,7 @@ func (h *Handlers) GetLessonStatistics(c *gin.Context) {
 		"date": bson.M{
 			"$gte": time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location()),
 			"$lte": time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 0, end.Location()),
+			"$ne":  nil, // Исключаем уроки без даты
 		},
 	}
 

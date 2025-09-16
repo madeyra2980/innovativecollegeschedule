@@ -36,31 +36,39 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
   ];
 
   const getScheduleForDay = (day: number) => {
-    return schedules.filter(schedule => schedule.day_of_week === day);
+    const daySchedules = schedules.filter(schedule => schedule.day_of_week === day);
+    console.log(`Schedules for day ${day}:`, daySchedules);
+    return daySchedules;
   };
 
   const getLessonsForDay = (day: number) => {
-    return lessons.filter(lesson => {
+    const dayLessons = lessons.filter(lesson => {
       if (!lesson.date) return false;
       const lessonDate = new Date(lesson.date);
       const dayOfWeek = lessonDate.getDay() === 0 ? 7 : lessonDate.getDay();
       return dayOfWeek === day;
     });
+    console.log(`Lessons for day ${day}:`, dayLessons);
+    return dayLessons;
   };
 
   const getScheduleForDayAndShift = (day: number, shift: number) => {
-    return schedules.filter(schedule => 
+    const dayShiftSchedules = schedules.filter(schedule => 
       schedule.day_of_week === day && schedule.shift === shift
     );
+    console.log(`Schedules for day ${day}, shift ${shift}:`, dayShiftSchedules);
+    return dayShiftSchedules;
   };
 
   const getLessonsForDayAndShift = (day: number, shift: number) => {
-    return lessons.filter(lesson => {
+    const dayShiftLessons = lessons.filter(lesson => {
       if (!lesson.date) return false;
       const lessonDate = new Date(lesson.date);
       const dayOfWeek = lessonDate.getDay() === 0 ? 7 : lessonDate.getDay();
       return dayOfWeek === day && lesson.shift === shift;
     });
+    console.log(`Lessons for day ${day}, shift ${shift}:`, dayShiftLessons);
+    return dayShiftLessons;
   };
 
   const getGroupName = (groupId: string) => {
@@ -90,7 +98,8 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
     return subject ? subject.code : 'Н/Д';
   };
 
-  const hasAnySchedule = schedules.length > 0 || lessons.length > 0;
+  // Показываем только уроки (реальные занятия), а не расписание (шаблоны)
+  const hasAnySchedule = lessons.length > 0;
 
   return (
     <div className="schedule-view">
@@ -119,9 +128,8 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
       ) : (
         <div className="schedule-grid">
           {daysOfWeek.map((day) => {
-            const daySchedules = getScheduleForDay(day.value);
             const dayLessons = getLessonsForDay(day.value);
-            const hasDaySchedule = daySchedules.length > 0 || dayLessons.length > 0;
+            const hasDaySchedule = dayLessons.length > 0;
             
             return (
               <div key={day.value} className="day-column">
@@ -129,7 +137,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
                   <h3>{day.label}</h3>
                   {hasDaySchedule && (
                     <span className="day-count">
-                      {daySchedules.length + dayLessons.length} занятий
+                      {dayLessons.length} занятий
                     </span>
                   )}
                 </div>
@@ -141,9 +149,8 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
                   </div>
                 ) : (
                   shifts.map((shift) => {
-                    const daySchedules = getScheduleForDayAndShift(day.value, shift.value);
                     const dayLessons = getLessonsForDayAndShift(day.value, shift.value);
-                    const allItems = [...daySchedules, ...dayLessons];
+                    const allItems = dayLessons;
                     
                     return (
                       <div key={shift.value} className="shift-section">

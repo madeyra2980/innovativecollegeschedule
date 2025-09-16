@@ -81,6 +81,27 @@ function App() {
     };
   }, [lastScrollY]);
 
+  // Обновление времени
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('ru-RU', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      const timeElement = document.getElementById('current-time');
+      if (timeElement) {
+        timeElement.textContent = timeString;
+      }
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Если пользователь не авторизован, показываем страницу входа
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
@@ -88,21 +109,21 @@ function App() {
 
   return (
     <div className="App">
-      {/* Фиксированное бургер-меню */}
-      <button
-        className={`burger-menu ${isMenuOpen ? 'active' : ''}`}
-        onClick={toggleMenu}
-        aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
-        title={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-
       <header className={`header ${!isHeaderVisible ? 'header-hidden' : ''}`}>
         <div className="container">
           <div className="header-content">
+            {/* Фиксированное бургер-меню */}
+            <button
+              className={`burger-menu ${isMenuOpen ? 'active' : ''}`}
+              onClick={toggleMenu}
+              aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
+              title={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+
             <div className="logo">
               <img 
                 src="https://innovativecollege.kz/wp-content/uploads/2025/03/cropped-img-3928png-300x142.png" 
@@ -110,6 +131,15 @@ function App() {
                 className="logo-image"
               />
               <span className="logo-subtitle">Система управления учебным процессом</span>
+            </div>
+
+            <div className="header-actions">
+              <div className="user-info">
+                <span className="user-name">
+                  Добро пожаловать!
+                </span>
+                <span className="current-time" id="current-time"></span>
+              </div>
             </div>
             
           </div>

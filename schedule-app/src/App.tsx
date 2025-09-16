@@ -47,6 +47,9 @@ const App: React.FC = () => {
         teachers: teachersResponse.data?.length || 0,
         subjects: subjectsResponse.data?.length || 0
       });
+      
+      // Логируем детали групп
+      console.log('Groups details:', groupsResponse.data);
     } catch (err: any) {
       setError('Ошибка загрузки данных: ' + (err.response?.data?.error || err.message));
     } finally {
@@ -59,28 +62,22 @@ const App: React.FC = () => {
       setError(null);
       
       if (filterType === 'group' && selectedGroup) {
-        // Получаем расписание группы
-        const schedulesResponse = await schedulesApi.getAll();
-        const allSchedules = schedulesResponse.data || [];
-        const groupSchedules = allSchedules.filter((schedule: Schedule) => schedule.group_id === selectedGroup.id);
-        
-        // Получаем уроки группы
+        // Получаем только уроки группы (реальные проведенные занятия)
         const lessonsResponse = await lessonsApi.getByGroup(selectedGroup.id);
         const groupLessons = lessonsResponse.data || [];
         
-        setSchedules(groupSchedules);
+        console.log('Group lessons:', groupLessons);
+        
+        setSchedules([]); // Не показываем расписание
         setLessons(groupLessons);
       } else if (filterType === 'teacher' && selectedTeacher) {
-        // Получаем расписание преподавателя
-        const schedulesResponse = await schedulesApi.getAll();
-        const allSchedules = schedulesResponse.data || [];
-        const teacherSchedules = allSchedules.filter((schedule: Schedule) => schedule.teacher_id === selectedTeacher.id);
-        
-        // Получаем уроки преподавателя
+        // Получаем только уроки преподавателя (реальные проведенные занятия)
         const lessonsResponse = await lessonsApi.getByTeacher(selectedTeacher.id);
         const teacherLessons = lessonsResponse.data || [];
         
-        setSchedules(teacherSchedules);
+        console.log('Teacher lessons:', teacherLessons);
+        
+        setSchedules([]); // Не показываем расписание
         setLessons(teacherLessons);
       }
     } catch (err: any) {
